@@ -1,25 +1,89 @@
-# AQI_Downscaling_SIH
-ML-based spatial downscaling of Sentinel-5P TROPOMI NO₂ from coarse satellite resolution to ~1 km using meteorological, traffic, population, land-cover, terrain, and aerosol features.
+# Hyderabad Urban NO₂ Downscaling
 
-# High-Resolution NO₂ Downscaling Using Machine Learning
-
-> A multi-source machine learning pipeline for downscaling Sentinel-5P/TROPOMI NO₂ observations to an approximately 1 km prediction grid using meteorological, traffic, population, land-cover, terrain, nighttime-light, and aerosol information.
+> AI/ML-based spatial downscaling of satellite-derived NO₂ over Hyderabad, Telangana, India.
 
 ---
 
 ## 📌 Project Overview
 
-Nitrogen dioxide (NO₂) is an important air pollutant associated with traffic, industrial activity, and other combustion sources. Satellite observations from Sentinel-5P/TROPOMI provide wide spatial coverage of atmospheric NO₂, but the satellite observations are relatively coarse for analyzing pollution variation within urban areas.
+This project aims to develop an AI/ML-based framework for producing a higher-resolution spatial representation of nitrogen dioxide (NO₂) over Hyderabad, Telangana, India.
 
-This project aims to develop a machine-learning-based spatial downscaling pipeline that combines coarse satellite NO₂ observations with fine-resolution environmental and urban features to produce an approximately 1 km NO₂ prediction surface.
+The project combines satellite observations with spatial, environmental, meteorological, infrastructure, and other auxiliary datasets to learn the relationship between observed NO₂ concentrations and local-scale features.
 
-### Core idea
+The resulting model will be used to generate a high-resolution NO₂ prediction map for the Hyderabad study region.
+
+---
+
+## 🎯 Objectives
+
+The primary objectives of this project are:
+
+1. Obtain satellite-derived NO₂ observations over Hyderabad.
+2. Define a consistent spatial analysis grid for the study area.
+3. Collect relevant environmental and spatial predictor variables.
+4. Aggregate all datasets to a common `grid_id`.
+5. Build a machine-learning training dataset.
+6. Train and compare multiple ML models.
+7. Evaluate model performance using appropriate validation methods.
+8. Generate a high-resolution NO₂ prediction map.
+9. Analyze the spatial distribution of NO₂ across different types of areas within Hyderabad.
+
+---
+
+# 🗺️ Study Area
+
+## Hyderabad, Telangana, India
+
+The study region is based on the approximately **1,448 km² area associated with Hyderabad's Outer Ring Road (ORR)**.
+
+The ORR-defined region was selected because it contains a diverse combination of:
+
+- Dense metropolitan areas
+- Residential areas
+- High-traffic regions
+- Industrial areas
+- Commercial areas
+- Peri-urban areas
+- Vegetated/green areas
+- Open areas
+
+This diversity provides useful spatial variation for developing and evaluating an NO₂ downscaling model.
+
+### Boundary Source
+
+The study boundary was obtained from the:
+
+**Telangana State Remote Sensing Applications Centre (TGRAC)**
+
+Dataset:
+
+**Outer Ring Road - 1448 Sq. Km**
+
+---
+
+# 🧩 Spatial Grid
+
+A fixed approximately **1 km × 1 km master grid** has been created over the study region.
+
+### Grid Specifications
+
+| Property | Value |
+|---|---|
+| Study region | Hyderabad ORR |
+| Approximate study area | 1,448 km² |
+| Grid resolution | 1 km × 1 km |
+| Number of grid cells | 1,543 |
+| Working CRS | EPSG:32644 |
+| Grid identifier | `grid_id` |
+| ID range | `HYD_0001` – `HYD_1543` |
+
+Each grid cell has a unique identifier.
+
+Example:
 
 ```text
-Coarse Sentinel-5P/TROPOMI NO₂
-              +
-Fine-resolution environmental & urban features
-              ↓
-       Machine Learning Model
-              ↓
-      ~1 km NO₂ prediction
+HYD_0001
+HYD_0002
+HYD_0003
+...
+HYD_1543
