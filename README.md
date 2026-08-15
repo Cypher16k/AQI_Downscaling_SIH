@@ -1,89 +1,354 @@
-# Hyderabad Urban NO₂ Downscaling
+# AQI Downscaling using AI/ML
 
-> AI/ML-based spatial downscaling of satellite-derived NO₂ over Hyderabad, Telangana, India.
+## Project Overview
 
----
+This project focuses on developing a machine learning-based NO₂ downscaling system for Hyderabad.
 
-## 📌 Project Overview
+The objective is to generate high-resolution NO₂ estimates by combining satellite observations with meteorological, urban, and land-surface information.
 
-This project aims to develop an AI/ML-based framework for producing a higher-resolution spatial representation of nitrogen dioxide (NO₂) over Hyderabad, Telangana, India.
-
-The project combines satellite observations with spatial, environmental, meteorological, infrastructure, and other auxiliary datasets to learn the relationship between observed NO₂ concentrations and local-scale features.
-
-The resulting model will be used to generate a high-resolution NO₂ prediction map for the Hyderabad study region.
+The project uses a Hyderabad ORR 1 km × 1 km master grid containing 1543 spatial cells. All datasets are aligned using the unique `grid_id` assigned to each cell.
 
 ---
 
-## 🎯 Objectives
+# Prototype Progress
 
-The primary objectives of this project are:
+## Prototype 1 - Baseline Model
 
-1. Obtain satellite-derived NO₂ observations over Hyderabad.
-2. Define a consistent spatial analysis grid for the study area.
-3. Collect relevant environmental and spatial predictor variables.
-4. Aggregate all datasets to a common `grid_id`.
-5. Build a machine-learning training dataset.
-6. Train and compare multiple ML models.
-7. Evaluate model performance using appropriate validation methods.
-8. Generate a high-resolution NO₂ prediction map.
-9. Analyze the spatial distribution of NO₂ across different types of areas within Hyderabad.
+Prototype 1 established the initial machine learning pipeline.
 
----
+### Features Used
 
-# 🗺️ Study Area
+- Temperature
+- Wind speed
+- Population density
+- Road density
 
-## Hyderabad, Telangana, India
+### Models Tested
 
-The study region is based on the approximately **1,448 km² area associated with Hyderabad's Outer Ring Road (ORR)**.
+- Random Forest
+- Extra Trees
+- XGBoost
 
-The ORR-defined region was selected because it contains a diverse combination of:
+### Evaluation Metrics
 
-- Dense metropolitan areas
-- Residential areas
-- High-traffic regions
-- Industrial areas
-- Commercial areas
-- Peri-urban areas
-- Vegetated/green areas
-- Open areas
+- MAE
+- RMSE
+- R²
+- MAPE
 
-This diversity provides useful spatial variation for developing and evaluating an NO₂ downscaling model.
-
-### Boundary Source
-
-The study boundary was obtained from the:
-
-**Telangana State Remote Sensing Applications Centre (TGRAC)**
-
-Dataset:
-
-**Outer Ring Road - 1448 Sq. Km**
+Prototype 1 validated the feasibility of using machine learning for NO₂ estimation.
 
 ---
 
-# 🧩 Spatial Grid
+# Prototype 2 - Multi-source Feature Integration
 
-A fixed approximately **1 km × 1 km master grid** has been created over the study region.
+Prototype 2 expands the dataset by integrating satellite, meteorological, urban, and land-surface features.
 
-### Grid Specifications
+The model uses a 1 km × 1 km Hyderabad grid:
 
-| Property | Value |
-|---|---|
-| Study region | Hyderabad ORR |
-| Approximate study area | 1,448 km² |
-| Grid resolution | 1 km × 1 km |
-| Number of grid cells | 1,543 |
-| Working CRS | EPSG:32644 |
-| Grid identifier | `grid_id` |
-| ID range | `HYD_0001` – `HYD_1543` |
+- Spatial resolution: 1 km × 1 km
+- Number of cells: 1543
+- CRS: EPSG:32644
 
-Each grid cell has a unique identifier.
+---
 
-Example:
+# Features
 
-```text
+## Satellite / Atmospheric Features
+
+- Satellite NO₂
+- Aerosol Optical Depth (AOD)
+- Cloud fraction
+
+## Meteorological Features
+
+- Temperature
+- Wind speed
+- Wind direction
+- Relative humidity
+- Surface pressure
+- Precipitation
+- Dew point
+- Solar radiation
+- Boundary layer height
+
+## Urban / Emission Proxy Features
+
+- Population density
+- Road density
+- Distance to road
+- Nighttime lights
+- Built-up density
+
+## Land / Terrain Features
+
+- Elevation
+- NDVI
+- Vegetation fraction
+- Built-up fraction
+- Water fraction
+- Cropland fraction
+- Bare land fraction
+- Distance to water
+
+---
+
+# Data Pipeline
+
+```
+Raw Data
+    |
+    ↓
+Data Validation
+    |
+    ↓
+Preprocessing
+    |
+    ↓
+Feature Engineering
+    |
+    ↓
+ML Training
+    |
+    ↓
+Evaluation
+    |
+    ↓
+NO₂ Prediction Maps
+```
+
+---
+
+# Repository Structure
+
+```
+AQI_DOWNSCALING_SIH
+
+├── data
+│   ├── raw
+│   ├── processed
+│   └── sample
+│
+├── docs
+│
+├── gee
+│   ├── satellite
+│   ├── meteorology
+│   ├── urban
+│   └── land
+│
+├── metadata
+│   └── GRID_METADATA.md
+│
+├── outputs
+│
+├── src
+│   ├── data
+│   ├── features
+│   ├── preprocessing
+│   ├── models
+│   └── visualization
+│
+├── requirements.txt
+│
+└── README.md
+```
+
+---
+
+# Grid Information
+
+## Study Area
+
+Hyderabad ORR enclosed study region, Telangana, India.
+
+## Grid Details
+
+- Resolution: 1 km × 1 km
+- Number of grid cells: 1543
+- Coordinate Reference System: EPSG:32644
+
+Each cell has a unique identifier:
+
+```
 HYD_0001
 HYD_0002
-HYD_0003
 ...
 HYD_1543
+```
+
+All datasets are joined using:
+
+```
+grid_id
+```
+
+---
+
+# Data Sources
+
+## Satellite
+
+- Sentinel-5P/TROPOMI NO₂
+- Satellite atmospheric products
+
+## Meteorology
+
+- Weather and atmospheric variables
+
+## Urban
+
+- Population density
+- Road networks
+- Nighttime lights
+- Built-up information
+
+## Land
+
+- Elevation
+- Vegetation indices
+- Land cover
+- Water bodies
+
+---
+
+# Installation
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# Running the Model
+
+Run the main ML pipeline:
+
+```bash
+python src/main.py
+```
+
+---
+
+# Source Code Structure
+
+The `src` directory contains modular components:
+
+## data/
+
+Handles:
+
+- Dataset loading
+- Data validation
+- Dataset merging
+
+## preprocessing/
+
+Handles:
+
+- Cleaning
+- Missing value processing
+- Data preparation
+
+## features/
+
+Handles:
+
+- Feature selection
+- Feature engineering
+
+## models/
+
+Contains:
+
+- Random Forest
+- Extra Trees
+- XGBoost
+- Model training
+- Evaluation
+
+## visualization/
+
+Contains:
+
+- Prediction plots
+- Model performance visualization
+- Spatial maps
+
+---
+
+# Current Data Status
+
+| Dataset | Status |
+|---|---|
+| Satellite NO₂ | Completed |
+| Meteorology | Completed |
+| Population density | Completed |
+| Road density | Completed |
+| Nighttime lights | Completed |
+| Built-up density | Completed |
+| Distance to road | Completed |
+| Elevation | Completed |
+| NDVI | Completed |
+| Land cover fractions | Completed |
+| Distance to water | Completed |
+| AOD | Under validation |
+
+---
+
+# Future Improvements - Prototype 3
+
+Planned improvements:
+
+## Ground NO₂ Calibration
+
+Integrate ground monitoring station observations to calibrate satellite-derived estimates.
+
+## Temporal Modelling
+
+Add:
+
+- Previous NO₂ values
+- Seasonal information
+- Time-series features
+
+Possible models:
+
+- LSTM
+- Temporal models
+
+## Spatial Validation
+
+Improve evaluation using spatial train-test splitting.
+
+## Explainability
+
+Add:
+
+- SHAP feature importance
+- Feature contribution analysis
+
+## Uncertainty Estimation
+
+Generate prediction uncertainty ranges along with NO₂ estimates.
+
+---
+
+# Project Goal
+
+Develop a high-resolution machine learning pipeline capable of estimating NO₂ distribution by combining:
+
+- Satellite observations
+- Atmospheric conditions
+- Weather patterns
+- Urban emission proxies
+- Land surface characteristics
+
