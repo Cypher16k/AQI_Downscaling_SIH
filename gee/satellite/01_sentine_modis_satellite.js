@@ -3,49 +3,43 @@
 // PROTOTYPE 2 — SATELLITE DATA PIPELINE
 // ============================================================
 //
-// Continuous period:
-//   2025-01-01 → 2026-01-01
+// PERIOD:
+//   2025
 //
-// Spatial resolution:
-//   Hyderabad 1 km master grid
-//   1,543 cells
+// TEMPORAL UNIT:
+//   DAILY
 //
-// Temporal output:
-//   One record per grid cell per UTC day
+// SPATIAL:
+//   1,543 Hyderabad 1-km grid cells
 //
-// Variables:
+// VARIABLES:
 //   satellite_NO2
 //   cloud_fraction
 //   AOD
 //
-// Sources:
-//   Sentinel-5P/TROPOMI OFFL NO2
-//   MODIS MAIAC MCD19A2 AOD
+// ARCHITECTURE:
+//   ONE MONTH PER EXPORT
 //
 // ============================================================
 
 
 // ============================================================
-// 1. LOAD MASTER GRID
+// 1. MASTER GRID
 // ============================================================
 
 var grid = ee.FeatureCollection(
   'projects/sih-internal-505509/assets/hyderabad_orr_1km_master_grid_v2'
 );
 
-print(
-  'Master grid:',
-  grid
-);
 
 print(
-  'Number of grid cells:',
+  'Grid cells:',
   grid.size()
 );
 
 
 // ============================================================
-// 2. ADD LATITUDE + LONGITUDE TO EVERY GRID CELL
+// 2. ADD LATITUDE + LONGITUDE
 // ============================================================
 
 var gridWithLocation = grid.map(
@@ -54,16 +48,16 @@ var gridWithLocation = grid.map(
     var centroid =
       cell.geometry().centroid();
 
-    var coordinates =
+    var coords =
       centroid.coordinates();
 
     return cell.set({
 
       'latitude':
-        coordinates.get(1),
+        coords.get(1),
 
       'longitude':
-        coordinates.get(0)
+        coords.get(0)
 
     });
 
@@ -71,196 +65,252 @@ var gridWithLocation = grid.map(
 );
 
 
-print(
-  'First grid cell:',
-  gridWithLocation.first()
-);
-
-
 // ============================================================
-// 3. DATE RANGE
-// ============================================================
-
-var startDate =
-  ee.Date('2025-01-01');
-
-var endDate =
-  ee.Date('2026-01-01');
-
-
-// ============================================================
-// 4. LOAD SENTINEL-5P NO2
+// 3. SENTINEL-5P NO2
 // ============================================================
 
 var no2Collection =
   ee.ImageCollection(
     'COPERNICUS/S5P/OFFL/L3_NO2'
-  )
-  .filterBounds(
-    grid.geometry()
-  )
-  .filterDate(
-    startDate,
-    endDate
   );
 
-print(
-  'Sentinel-5P NO2 images:',
-  no2Collection.size()
-);
-
 
 // ============================================================
-// 5. LOAD SENTINEL-5P CLOUD
-// ============================================================
-//
-// Separate cloud product.
-//
+// 4. SENTINEL-5P CLOUD
 // ============================================================
 
 var cloudCollection =
   ee.ImageCollection(
     'COPERNICUS/S5P/OFFL/L3_CLOUD'
-  )
-  .filterBounds(
-    grid.geometry()
-  )
-  .filterDate(
-    startDate,
-    endDate
   );
-
-print(
-  'Sentinel-5P cloud images:',
-  cloudCollection.size()
-);
 
 
 // ============================================================
-// 6. LOAD MODIS MAIAC AOD
+// 5. MODIS MAIAC AOD
 // ============================================================
 
 var aodCollection =
   ee.ImageCollection(
     'MODIS/061/MCD19A2_GRANULES'
-  )
-  .filterBounds(
-    grid.geometry()
-  )
-  .filterDate(
-    startDate,
-    endDate
   );
 
+
+// ============================================================
+// 6. CHOOSE MONTH
+// ============================================================
+//
+// CHANGE ONLY THESE TWO VALUES.
+//
+// Example:
+// January = 01
+// February = 02
+// ...
+//
+// ============================================================
+
+var monthStart =
+  ee.Date('2025-01-01');
+
+var monthEnd =
+  ee.Date('2025-02-01');
+
+var monthLabel =
+  '2025_01';
+
+
+// ============================================================
+// 7. FILTER MONTHLY COLLECTIONS
+// ============================================================
+
+var monthlyNO2 =
+  no2Collection
+    .filterBounds(
+      grid.geometry()
+    )
+    .filterDate(
+      monthStart,
+      monthEnd
+    );
+
+
+var monthlyCloud =
+  cloudCollection
+    .filterBounds(
+      grid.geometry()
+    )
+    .filterDate(
+      monthStart,
+      monthEnd
+    );
+
+
+var monthlyAOD =
+  aodCollection
+    .filterBounds(
+      grid.geometry()
+    )
+    .filterDate(
+      monthStart,
+      monthEnd
+    );
+
+
 print(
-  'MODIS AOD images:',
-  aodCollection.size()
+  'NO2 images:',
+  monthlyNO2.size()
+);
+
+print(
+  'Cloud images:',
+  monthlyCloud.size()
+);
+
+print(
+  'AOD images:',
+  monthlyAOD.size()
 );
 
 
 // ============================================================
-// 7. FUNCTION — GET DAILY SATELLITE DATA
+// 8. NUMBER OF DAYS IN MONTH
 // ============================================================
 
-function getDailySatelliteData(
-  date
+var numberOfDays =
+  monthEnd
+    .difference(
+      monthStart,
+      'day'
+    );
+
+print(
+  'Days in month:',
+  numberOfDays
+);
+
+
+// ============================================================
+// 9. CREATE DAILY IMAGE
+// ============================================================
+
+function createDailyImage(
+  dayOffset
 ) {
 
-  var dayStart =
-    ee.Date(date);
+  var date =
+    monthStart.advance(
+      ee.Number(dayOffset),
+      'day'
+    );
 
-  var dayEnd =
-    dayStart.advance(
+  var nextDate =
+    date.advance(
       1,
       'day'
     );
 
-
-  // ==========================================================
-  // SENTINEL-5P NO2 FOR THIS DAY
-  // ==========================================================
-
-  var dailyNO2 =
-    no2Collection
-      .filterDate(
-        dayStart,
-        dayEnd
-      );
+  var dateString =
+    date.format(
+      'yyyyMMdd'
+    );
 
 
   // ==========================================================
-  // SENTINEL-5P CLOUD FOR THIS DAY
+  // NO2
   // ==========================================================
 
-  var dailyCloud =
-    cloudCollection
-      .filterDate(
-        dayStart,
-        dayEnd
-      );
+  var dailyNO2Collection =
+    monthlyNO2.filterDate(
+      date,
+      nextDate
+    );
 
-
-  // ==========================================================
-  // MODIS AOD FOR THIS DAY
-  // ==========================================================
-
-  var dailyAOD =
-    aodCollection
-      .filterDate(
-        dayStart,
-        dayEnd
-      );
-
-
-  // ==========================================================
-  // DAILY NO2 COMPOSITE
-  // ==========================================================
 
   var no2Image =
-    dailyNO2
-      .select(
-        'tropospheric_NO2_column_number_density'
+    ee.Image(
+      ee.Algorithms.If(
+
+        dailyNO2Collection.size().gt(0),
+
+        dailyNO2Collection
+          .select(
+            'tropospheric_NO2_column_number_density'
+          )
+          .mean(),
+
+        ee.Image.constant(0)
+          .updateMask(
+            ee.Image.constant(0)
+          )
+
       )
-      .mean()
-      .rename(
-        'satellite_NO2'
-      );
+    );
+
+
+  no2Image =
+    no2Image.rename(
+      ee.String(
+        'no2_'
+      ).cat(
+        dateString
+      )
+    );
 
 
   // ==========================================================
-  // DAILY CLOUD FRACTION
+  // CLOUD
   // ==========================================================
+
+  var dailyCloudCollection =
+    monthlyCloud.filterDate(
+      date,
+      nextDate
+    );
+
 
   var cloudImage =
-    dailyCloud
-      .select(
-        'cloud_fraction'
+    ee.Image(
+      ee.Algorithms.If(
+
+        dailyCloudCollection.size().gt(0),
+
+        dailyCloudCollection
+          .select(
+            'cloud_fraction'
+          )
+          .mean(),
+
+        ee.Image.constant(0)
+          .updateMask(
+            ee.Image.constant(0)
+          )
+
       )
-      .mean()
-      .rename(
-        'cloud_fraction'
-      );
+    );
+
+
+  cloudImage =
+    cloudImage.rename(
+      ee.String(
+        'cloud_'
+      ).cat(
+        dateString
+      )
+    );
 
 
   // ==========================================================
-  // MODIS AOD
-  // ==========================================================
-  //
-  // Optical_Depth_055 scale factor:
-  // 0.001
-  //
-  // QA:
-  // bits 0-2:
-  //   1 = clear
-  //   2 = possibly cloudy
-  //   3 = cloudy
-  //
-  // We keep clear retrievals only.
-  //
+  // AOD
   // ==========================================================
 
-  var aodWithQA =
-    dailyAOD.map(
+  var dailyAODCollection =
+    monthlyAOD.filterDate(
+      date,
+      nextDate
+    );
+
+
+  var qaFilteredAOD =
+    dailyAODCollection.map(
       function(image) {
 
         var qa =
@@ -268,414 +318,180 @@ function getDailySatelliteData(
             'AOD_QA'
           );
 
-        // Extract cloud-mask bits 0-2.
-        var cloudMask =
+
+        var qaBits =
           qa.bitwiseAnd(7);
 
-        // Keep clear pixels only.
-        var clear =
-          cloudMask.eq(1);
 
-        var aod =
-          image.select(
+        var clear =
+          qaBits.eq(1);
+
+
+        return image
+          .select(
             'Optical_Depth_055'
           )
           .multiply(0.001)
           .updateMask(
             clear
-          )
-          .rename(
-            'AOD'
           );
-
-        return aod;
 
       }
     );
 
 
   var aodImage =
-    aodWithQA.mean()
-      .rename(
-        'AOD'
-      );
+    ee.Image(
+      ee.Algorithms.If(
 
+        qaFilteredAOD.size().gt(0),
 
-  // ==========================================================
-  // COMBINE DAILY SATELLITE VARIABLES
-  // ==========================================================
+        qaFilteredAOD.mean(),
 
-  var dailySatellite =
-    ee.Image.cat([
+        ee.Image.constant(0)
+          .updateMask(
+            ee.Image.constant(0)
+          )
 
-      no2Image,
-
-      cloudImage,
-
-      aodImage
-
-    ]);
-
-
-  // ==========================================================
-  // EXTRACT TO GRID
-  // ==========================================================
-  //
-  // Use the grid geometry itself rather than just a centroid
-  // so the value represents the 1 km cell.
-  //
-  // ==========================================================
-
-  var samples =
-    dailySatellite.reduceRegions({
-
-      collection:
-        gridWithLocation,
-
-      reducer:
-        ee.Reducer.mean(),
-
-      scale:
-        1000,
-
-      tileScale:
-        4
-
-    });
-
-
-  // ==========================================================
-  // ADD TIMESTAMP
-  // ==========================================================
-
-  samples =
-    samples.map(
-      function(feature) {
-
-        return ee.Feature(
-          null,
-          {
-
-            'grid_id':
-              feature.get(
-                'grid_id'
-              ),
-
-            'latitude':
-              feature.get(
-                'latitude'
-              ),
-
-            'longitude':
-              feature.get(
-                'longitude'
-              ),
-
-            'timestamp_utc':
-              dayStart.format(
-                "YYYY-MM-dd'T'HH:mm:ss'Z'"
-              ),
-
-            'satellite_NO2':
-              feature.get(
-                'satellite_NO2'
-              ),
-
-            'cloud_fraction':
-              feature.get(
-                'cloud_fraction'
-              ),
-
-            'AOD':
-              feature.get(
-                'AOD'
-              )
-
-          }
-        );
-
-      }
+      )
     );
 
 
-  return samples;
+  aodImage =
+    aodImage.rename(
+      ee.String(
+        'aod_'
+      ).cat(
+        dateString
+      )
+    );
+
+
+  // ==========================================================
+  // COMBINE
+  // ==========================================================
+
+  return ee.Image.cat([
+
+    no2Image,
+
+    cloudImage,
+
+    aodImage
+
+  ])
+  .set(
+    'system:index',
+    dateString
+  );
 
 }
 
 
 // ============================================================
-// 8. CREATE LIST OF DAYS
+// 10. CREATE DAILY IMAGE COLLECTION
 // ============================================================
 
-var numberOfDays =
-  endDate
-    .difference(
-      startDate,
-      'day'
-    );
-
-
-var dayOffsets =
+var days =
   ee.List.sequence(
     0,
     numberOfDays.subtract(1)
   );
 
 
-// ============================================================
-// 9. RUN DAILY EXTRACTION
-// ============================================================
-//
-// NOTE:
-// This creates approximately:
-//
-// 1,543 cells × 365 days
-//
-// ≈ 563,195 records.
-//
-// ============================================================
-
-var dailyCollections =
-  dayOffsets.map(
-    function(dayOffset) {
-
-      var date =
-        startDate.advance(
-          ee.Number(dayOffset),
-          'day'
-        );
-
-      return getDailySatelliteData(
-        date
-      );
-
-    }
+var dailySatellite =
+  ee.ImageCollection(
+    days.map(
+      createDailyImage
+    )
   );
 
 
-// ============================================================
-// 10. FLATTEN
-// ============================================================
-
-var satelliteDataset =
-  ee.FeatureCollection(
-    dailyCollections
-  ).flatten();
+print(
+  'Daily satellite images:',
+  dailySatellite.size()
+);
 
 
 // ============================================================
-// 11. CHECK DATASET
+// 11. STACK THIS MONTH ONLY
 // ============================================================
 
-print(
-  '=========================================='
-);
-
-print(
-  'SATELLITE DATASET'
-);
-
-print(
-  '=========================================='
-);
-
-print(
-  'Expected grid cells:',
-  grid.size()
-);
-
-print(
-  'Expected days:',
-  numberOfDays
-);
-
-print(
-  'Expected maximum records:',
-  grid.size()
-    .multiply(
-      numberOfDays
+var monthlyStack =
+  dailySatellite
+    .sort(
+      'system:index'
     )
-);
+    .toBands();
+
 
 print(
-  'Actual records:',
-  satelliteDataset.size()
-);
-
-print(
-  'First satellite record:',
-  satelliteDataset.first()
-);
-
-
-// ============================================================
-// 12. CHECK UNIQUE GRID IDS
-// ============================================================
-
-print(
-  'Unique grid IDs:',
-  satelliteDataset
-    .aggregate_array(
-      'grid_id'
-    )
-    .distinct()
+  'Monthly satellite band count:',
+  monthlyStack
+    .bandNames()
     .size()
 );
 
 
 // ============================================================
-// 13. CHECK TIMESTAMPS
+// 12. REDUCE TO GRID
 // ============================================================
 
+var monthlySatelliteByGrid =
+  monthlyStack.reduceRegions({
+
+    collection:
+      gridWithLocation,
+
+    reducer:
+      ee.Reducer.mean(),
+
+    scale:
+      1000,
+
+    tileScale:
+      4
+
+  });
+
+
 print(
-  'First timestamps:',
-  satelliteDataset
-    .aggregate_array(
-      'timestamp_utc'
-    )
-    .distinct()
-    .sort()
-    .slice(
-      0,
-      10
-    )
+  'Monthly grid records:',
+  monthlySatelliteByGrid.size()
+);
+
+
+print(
+  'Expected:',
+  grid.size()
+);
+
+
+print(
+  'First record:',
+  monthlySatelliteByGrid.first()
 );
 
 
 // ============================================================
-// 14. CHECK VALID NO2
-// ============================================================
-
-var validNO2 =
-  satelliteDataset.filter(
-    ee.Filter.notNull([
-      'satellite_NO2'
-    ])
-  );
-
-print(
-  'Records with satellite NO2:',
-  validNO2.size()
-);
-
-print(
-  'Records without satellite NO2:',
-  satelliteDataset.size()
-    .subtract(
-      validNO2.size()
-    )
-);
-
-
-// ============================================================
-// 15. CHECK VALID AOD
-// ============================================================
-
-var validAOD =
-  satelliteDataset.filter(
-    ee.Filter.notNull([
-      'AOD'
-    ])
-  );
-
-print(
-  'Records with AOD:',
-  validAOD.size()
-);
-
-print(
-  'Records without AOD:',
-  satelliteDataset.size()
-    .subtract(
-      validAOD.size()
-    )
-);
-
-
-// ============================================================
-// 16. CHECK CLOUD FRACTION
-// ============================================================
-
-var validCloud =
-  satelliteDataset.filter(
-    ee.Filter.notNull([
-      'cloud_fraction'
-    ])
-  );
-
-print(
-  'Records with cloud fraction:',
-  validCloud.size()
-);
-
-print(
-  'Records without cloud fraction:',
-  satelliteDataset.size()
-    .subtract(
-      validCloud.size()
-    )
-);
-
-
-// ============================================================
-// 17. SATELLITE NO2 STATISTICS
-// ============================================================
-
-print(
-  'Satellite NO2 statistics:',
-  validNO2.aggregate_stats(
-    'satellite_NO2'
-  )
-);
-
-
-// ============================================================
-// 18. AOD STATISTICS
-// ============================================================
-
-print(
-  'AOD statistics:',
-  validAOD.aggregate_stats(
-    'AOD'
-  )
-);
-
-
-// ============================================================
-// 19. CLOUD FRACTION STATISTICS
-// ============================================================
-
-print(
-  'Cloud fraction statistics:',
-  validCloud.aggregate_stats(
-    'cloud_fraction'
-  )
-);
-
-
-// ============================================================
-// 20. EXPORT
-// ============================================================
-//
-// IMPORTANT:
-// Because this is a large continuous dataset,
-// export satellite data separately.
-//
+// 13. EXPORT
 // ============================================================
 
 Export.table.toDrive({
 
   collection:
-    satelliteDataset,
+    monthlySatelliteByGrid,
 
   description:
-    'Hyderabad_Prototype2_Satellite_2025',
+    'Hyderabad_Prototype2_Satellite_' +
+    monthLabel,
 
   folder:
-    'NO2_Downscaling_Hackathon',
+    'NO2_Downscaling_Hackathon/Prototype2/Satellite',
 
   fileNamePrefix:
-    'prototype2_satellite_hyderabad_2025',
+    'satellite_' +
+    monthLabel,
 
   fileFormat:
     'CSV'
