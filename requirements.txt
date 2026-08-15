@@ -1,0 +1,20 @@
+# Data processing
+pandas
+numpy
+
+# Machine Learning
+scikit-learn
+xgboost
+
+# Visualization
+matplotlib
+
+# Geospatial processing
+geopandas
+shapely
+pyproj
+fiona
+
+# Jupyter support (optional, for notebooks)
+jupyter
+ipykernel
