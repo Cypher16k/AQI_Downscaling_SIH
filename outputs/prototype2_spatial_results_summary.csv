@@ -1,0 +1,8 @@
+experiment,test_definition,test_samples,test_grids,rmse,mae,r2,rmse_improvement_pct,mae_improvement_pct
+Diagonal spatial holdout,Train NE+SW; test NW+SE,49607,860.0,1.52393e-05,1.12659e-05,0.716585,46.85,47.75
+Reverse diagonal spatial holdout,Train NW+SE; test NE+SW,41423,683.0,1.46062e-05,1.06263e-05,0.724362,47.58,50.12
+4-way spatial holdout,Hold out SE; train NW+NE+SW,24818,412.0,1.34825e-05,9.9349e-06,0.692705,50.12,56.43
+4-way spatial holdout,Hold out SW; train NW+NE+SE,20671,347.0,1.54102e-05,1.12442e-05,0.697459,47.38,48.17
+4-way spatial holdout,Hold out NE; train NW+SW+SE,20752,336.0,1.59072e-05,1.19868e-05,0.612272,42.6,45.36
+4-way spatial holdout,Hold out NW; train NE+SW+SE,24789,448.0,1.66299e-05,1.23575e-05,0.68369,49.03,45.92
+4-way spatial holdout,Mean across four held-out quadrants,91030,,,,0.671531,47.28,48.97

@@ -212,6 +212,12 @@ grid_id
 
 ---
 
+# Prototype 2 Output
+
+The current Prototype 2 spatial results summary is available here:
+
+[Prototype 2 Spatial Results Summary CSV](outputs/prototype2_spatial_results_summary.csv)
+
 # Installation
 
 Clone the repository:
