@@ -1,360 +1,213 @@
-# AQI Downscaling using AI/ML
+# AI-Based High Resolution NO₂ Downscaling for Hyderabad
 
-## Project Overview
+## Overview
+This project develops an AI-based air quality downscaling system to generate high-resolution (1 km × 1 km) NO₂ concentration maps for Hyderabad.
 
-This project focuses on developing a machine learning-based NO₂ downscaling system for Hyderabad.
+The approach combines:
+- Satellite observations
+- Meteorological data
+- Land surface characteristics
+- Urban features
+- Ground monitoring observations
 
-The objective is to generate high-resolution NO₂ estimates by combining satellite observations with meteorological, urban, and land-surface information.
-
-The project uses a Hyderabad ORR 1 km × 1 km master grid containing 1543 spatial cells. All datasets are aligned using the unique `grid_id` assigned to each cell.
+to estimate spatial NO₂ distribution.
 
 ---
 
-# Prototype Progress
+# Prototype Evolution
 
-## Prototype 1 - Baseline Model
+## Prototype 1 — Data Pipeline Development
 
-Prototype 1 established the initial machine learning pipeline.
+Objective:
+- Build automated pipelines for collecting and processing environmental datasets.
 
-### Features Used
+Datasets:
+- Sentinel-5P NO₂
+- AOD
+- ERA5 meteorology
+- NDVI
+- Terrain features
+- Urban features
 
+Achievements:
+- Hyderabad 1 km grid generation
+- Automated feature extraction pipeline
+
+---
+
+# Prototype 2 — Satellite-Based NO₂ Downscaling
+
+Objective:
+Predict high-resolution NO₂ using satellite and environmental features.
+
+Features:
+- Sentinel-5P NO₂
+- AOD
+- NDVI
 - Temperature
-- Wind speed
-- Population density
-- Road density
-
-### Models Tested
-
-- Random Forest
-- Extra Trees
-- XGBoost
-
-### Evaluation Metrics
-
-- MAE
-- RMSE
-- R²
-- MAPE
-
-Prototype 1 validated the feasibility of using machine learning for NO₂ estimation.
-
----
-
-# Prototype 2 - Multi-source Feature Integration
-
-Prototype 2 expands the dataset by integrating satellite, meteorological, urban, and land-surface features.
-
-The model uses a 1 km × 1 km Hyderabad grid:
-
-- Spatial resolution: 1 km × 1 km
-- Number of cells: 1543
-- CRS: EPSG:32644
-
----
-
-# Features
-
-## Satellite / Atmospheric Features
-
-- Satellite NO₂
-- Aerosol Optical Depth (AOD)
-- Cloud fraction
-
-## Meteorological Features
-
-- Temperature
+- Humidity
 - Wind speed
 - Wind direction
-- Relative humidity
-- Surface pressure
-- Precipitation
-- Dew point
-- Solar radiation
-- Boundary layer height
-
-## Urban / Emission Proxy Features
-
-- Population density
-- Road density
-- Distance to road
-- Nighttime lights
-- Built-up density
-
-## Land / Terrain Features
-
+- Rainfall
+- Pressure
 - Elevation
-- NDVI
-- Vegetation fraction
-- Built-up fraction
-- Water fraction
-- Cropland fraction
-- Bare land fraction
-- Distance to water
+- Land cover
+- Built-up density
+- Population
+- Nighttime lights
+- Road features
+
+Spatial setup:
+- Hyderabad region
+- 1543 grid cells
+- 1 km × 1 km resolution
+
+Validation:
+- 4-way spatial validation
+- Mean R² ≈ 0.67
 
 ---
 
-# Data Pipeline
+# Prototype 3 — Ground-Calibrated NO₂ Downscaling
 
-```
-Raw Data
-    |
-    ↓
-Data Validation
-    |
-    ↓
-Preprocessing
-    |
-    ↓
-Feature Engineering
-    |
-    ↓
-ML Training
-    |
-    ↓
-Evaluation
-    |
-    ↓
-NO₂ Prediction Maps
-```
+Objective:
+Improve satellite-based predictions using real ground monitoring observations.
+
+## Ground NO₂ Processing Pipeline
+
+CPCB 15-minute observations  
+↓  
+Daily NO₂ aggregation  
+↓  
+Station metadata generation  
+↓  
+Station to grid mapping  
+↓  
+Ground NO₂ target dataset
+
+Dataset:
+- 14 monitoring stations
+- January 2025 to August 2025
+- Daily resolution
+- Hyderabad 1 km grid mapping
+
+Output:
+`ground_no2_daily_grid.csv`
+
+Contains:
+- Date
+- Station ID
+- Station name
+- Grid ID
+- Latitude
+- Longitude
+- Ground NO₂ concentration
+- Coverage information
 
 ---
 
-# Repository Structure
+# Ground Data Limitation
+
+The ground monitoring network is sparse:
+
+- Total grid cells: 1543
+- Ground monitoring locations: 14
+
+Therefore, ground NO₂ values are available only at monitoring locations. Remaining cells are prediction locations.
+
+---
+
+# Prototype 3 Modelling Strategy
+
+Satellite + Environmental Features
+
+↓
+
+Prototype 2 Spatial Model
+
+↓
+
+City-wide NO₂ estimation
+
++
+
+Ground station calibration
+
+↓
+
+Ground-calibrated NO₂ map
+
+---
+
+# Validation Strategy
+
+Because monitoring stations are limited, random train-test splitting should be avoided.
+
+Recommended:
+
+## Leave-One-Station-Out Validation
+
+Example:
+
+Training:
+13 stations
+
+Testing:
+1 unseen station
+
+This evaluates spatial generalization.
+
+---
+
+# Project Structure
 
 ```
-AQI_DOWNSCALING_SIH
+AQI_Downscaling_SIH/
 
-├── data
-│   ├── raw
-│   ├── processed
-│   └── sample
+├── data/
+│   ├── raw/
+│   └── processed/
 │
-├── docs
+├── src/
+│   ├── data/
+│   ├── models/
+│   └── visualization/
 │
-├── gee
-│   ├── satellite
-│   ├── meteorology
-│   ├── urban
-│   └── land
-│
-├── metadata
-│   └── GRID_METADATA.md
-│
-├── outputs
-│
-├── src
-│   ├── data
-│   ├── features
-│   ├── preprocessing
-│   ├── models
-│   └── visualization
-│
+├── notebooks/
 ├── requirements.txt
-│
 └── README.md
 ```
 
 ---
 
-# Grid Information
+# Completed Work
 
-## Study Area
-
-Hyderabad ORR enclosed study region, Telangana, India.
-
-## Grid Details
-
-- Resolution: 1 km × 1 km
-- Number of grid cells: 1543
-- Coordinate Reference System: EPSG:32644
-
-Each cell has a unique identifier:
-
-```
-HYD_0001
-HYD_0002
-...
-HYD_1543
-```
-
-All datasets are joined using:
-
-```
-grid_id
-```
+✅ Hyderabad 1 km grid generation  
+✅ Satellite NO₂ extraction  
+✅ AOD extraction  
+✅ Meteorological extraction  
+✅ NDVI extraction  
+✅ Urban and terrain feature extraction  
+✅ Prototype 2 ML dataset  
+✅ Prototype 2 spatial validation  
+✅ Ground NO₂ collection  
+✅ Daily ground NO₂ processing  
+✅ Station metadata generation  
+✅ Station-grid mapping  
+✅ Prototype 3 ground target dataset  
 
 ---
 
-# Data Sources
+# Future Improvements
 
-## Satellite
-
-- Sentinel-5P/TROPOMI NO₂
-- Satellite atmospheric products
-
-## Meteorology
-
-- Weather and atmospheric variables
-
-## Urban
-
-- Population density
-- Road networks
-- Nighttime lights
-- Built-up information
-
-## Land
-
-- Elevation
-- Vegetation indices
-- Land cover
-- Water bodies
+- Increase ground monitoring coverage
+- Improve calibration methods
+- Build interactive NO₂ visualization dashboard
+- Extend to additional pollutants
+- Deploy city-scale air quality monitoring framework
 
 ---
 
-# Prototype 2 Output
+# Goal
 
-The current Prototype 2 spatial results summary is available here:
-
-[Prototype 2 Spatial Results Summary CSV](outputs/prototype2_spatial_results_summary.csv)
-
-# Installation
-
-Clone the repository:
-
-```bash
-git clone <repository-url>
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-# Running the Model
-
-Run the main ML pipeline:
-
-```bash
-python src/main.py
-```
-
----
-
-# Source Code Structure
-
-The `src` directory contains modular components:
-
-## data/
-
-Handles:
-
-- Dataset loading
-- Data validation
-- Dataset merging
-
-## preprocessing/
-
-Handles:
-
-- Cleaning
-- Missing value processing
-- Data preparation
-
-## features/
-
-Handles:
-
-- Feature selection
-- Feature engineering
-
-## models/
-
-Contains:
-
-- Random Forest
-- Extra Trees
-- XGBoost
-- Model training
-- Evaluation
-
-## visualization/
-
-Contains:
-
-- Prediction plots
-- Model performance visualization
-- Spatial maps
-
----
-
-# Current Data Status
-
-| Dataset | Status |
-|---|---|
-| Satellite NO₂ | Completed |
-| Meteorology | Completed |
-| Population density | Completed |
-| Road density | Completed |
-| Nighttime lights | Completed |
-| Built-up density | Completed |
-| Distance to road | Completed |
-| Elevation | Completed |
-| NDVI | Completed |
-| Land cover fractions | Completed |
-| Distance to water | Completed |
-| AOD | Under validation |
-
----
-
-# Future Improvements - Prototype 3
-
-Planned improvements:
-
-## Ground NO₂ Calibration
-
-Integrate ground monitoring station observations to calibrate satellite-derived estimates.
-
-## Temporal Modelling
-
-Add:
-
-- Previous NO₂ values
-- Seasonal information
-- Time-series features
-
-Possible models:
-
-- LSTM
-- Temporal models
-
-## Spatial Validation
-
-Improve evaluation using spatial train-test splitting.
-
-## Explainability
-
-Add:
-
-- SHAP feature importance
-- Feature contribution analysis
-
-## Uncertainty Estimation
-
-Generate prediction uncertainty ranges along with NO₂ estimates.
-
----
-
-# Project Goal
-
-Develop a high-resolution machine learning pipeline capable of estimating NO₂ distribution by combining:
-
-- Satellite observations
-- Atmospheric conditions
-- Weather patterns
-- Urban emission proxies
-- Land surface characteristics
-
+Develop an AI-powered air quality monitoring framework combining satellite coverage with ground-level accuracy to generate detailed pollution maps.
